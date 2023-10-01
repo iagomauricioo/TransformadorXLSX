@@ -1,39 +1,40 @@
-import xmltodict # Transformar arquivos .xml em dicionários
-import os   # Manusear arquivos
-import json #Converter o arquivo em JSON para facilitar a visualização
-import pandas
+import xmltodict  # Transform XML files into dictionaries
+import os  # Handle files
+import json  # Convert the file to JSON for easier visualization
+import pandas  # Data manipulation and analysis
 
-def pegar_infos(nome_arquivo, valores):
-    print(f"Pegou as informações {nome_arquivo}")
-    with open(f"nfs/{nome_arquivo}", "rb") as arquivo_xml: #usa-se o 'rb' para que não leia em string e sim em bytes object
-          
-            dic_arquivo = xmltodict.parse(arquivo_xml)
-            print(json.dumps(dic_arquivo, indent=4))
-            
-            if "NFe" in dic_arquivo:
-                infos_nf = dic_arquivo["NFe"]["infNFe"]
-            else:
-                infos_nf = dic_arquivo["nfeProc"]["NFe"]["infNFe"]
-            numero_nota = infos_nf["@Id"]
-            empresa_emissora = infos_nf["emit"]['xNome']
-            nome_cliente = infos_nf["dest"]["xNome"]
-            endereco = infos_nf["dest"]["enderDest"]
-            
-            if "vol" in infos_nf["transp"]:
-                peso_bruto = infos_nf["transp"]["vol"]["pesoB"]
-            else:
-                peso_bruto = "Não informado"
+def get_info(file_name, values):
+    with open(f"nfs/{file_name}", "rb") as xml_file:
+        dict_file = xmltodict.parse(xml_file)
+        
+        if "NFe" in dict_file:
+            nf_info = dict_file["NFe"]["infNFe"]
+        else:
+            nf_info = dict_file["nfeProc"]["NFe"]["infNFe"]
+        
+        note_number = nf_info["@Id"]
+        issuing_company = nf_info["emit"]['xNome']
+        customer_name = nf_info["dest"]["xNome"]
+        address = nf_info["dest"]["enderDest"]
+        
+        if "vol" in nf_info["transp"]:
+            gross_weight = nf_info["transp"]["vol"]["pesoB"]
+        else:
+            gross_weight = "Not informed"
 
-            valores.append([numero_nota, empresa_emissora, nome_cliente, endereco, peso_bruto])
+        values.append([note_number, issuing_company, customer_name, address, gross_weight])
 
-lista_arquivos = os.listdir('nfs') # Listar os arquivos da pasta nfs
+def main():
+    file_list = os.listdir('nfs')
 
-colunas = ["numero_nota", "empresa_emissora", "nome_cliente", "endereco", "peso_bruto"]
+    columns = ["note_number", "issuing_company", "customer_name", "address", "gross_weight"]
 
-valores = []
+    data_values = []
 
-for arquivo in lista_arquivos:
-    pegar_infos(arquivo, valores)
+    for file in file_list:
+        get_info(file, data_values)
 
-tabela = pandas.DataFrame(columns=colunas, data=valores)
-tabela.to_excel("NotasFiscais.xlsx", index=False) 
+    table = pandas.DataFrame(columns=columns, data=data_values)
+    table.to_excel("NFes.xlsx", index=False)
+
+main()
